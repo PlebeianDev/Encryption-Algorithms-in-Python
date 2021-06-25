@@ -9,7 +9,7 @@ h4 = 0xC3D2E1F0
 def shift(n, x):
     return ((n << x) | (n >> (32-x))) & 0xFFFFFFFF
 
-word = "str12"
+word = input("Type word:")
 
 
 #turn word to bytes
@@ -24,7 +24,6 @@ blocks = []
 blocks =[ padded_word[i : i + 64] for i in range(0, len(padded_word), 64) ]
 
 for block in blocks:
-    print(block)
     #extend word
     word_extended = list(struct.unpack(">16L",block)) + [0]* 64
     for i in range(16, 80):
