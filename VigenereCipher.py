@@ -25,7 +25,21 @@ def encrypt(cipher_list, key, word):
         encrypted_word += cipher_list[ord(key[i])-97][ord(word[i])-97]
     return encrypted_word
     
+def decrypt(cipher_list, key ,word):
+    decrypted_word = ""
 
+    for i in range(len(word)):
+        x = ord(key[i])-97
+        letter = word[i]
+        #print(letter)
+        for j in range(len(cipher_list[x])):
+            if letter == cipher_list[x][j]:
+                """print("HIT {0}".format(cipher_list[x][j]))
+                print(chr(j+97))"""
+                decrypted_word += chr(j+97)
+
+    return decrypted_word
+        
 
 
 
@@ -37,16 +51,19 @@ key = "deceptive"
 
 
 
-print(cipher_list[ ord(key[0])-97 ] )
+
 word = word.lower().replace(" ", "")
-print(word)
+
 
 
 
 key = key_str(word, key)
 
 encrypted_word = encrypt(cipher_list, key, word)
-print(encrypted_word)
+#print(encrypted_word)
+decrypted_word = decrypt(cipher_list, key, encrypted_word)
+print(decrypted_word)
+
 
 
 
