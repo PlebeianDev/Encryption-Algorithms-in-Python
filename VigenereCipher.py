@@ -34,8 +34,6 @@ def decrypt(cipher_list, key ,word):
         #print(letter)
         for j in range(len(cipher_list[x])):
             if letter == cipher_list[x][j]:
-                """print("HIT {0}".format(cipher_list[x][j]))
-                print(chr(j+97))"""
                 decrypted_word += chr(j+97)
 
     return decrypted_word
@@ -55,14 +53,50 @@ key = "deceptive"
 word = word.lower().replace(" ", "")
 
 
-
+testWords = ['a', "this is an str", "The quick brown fox jumps over the lazy dog"]
+testKey = "key"
 
 key = key_str(word, key)
+
+print("Testing starting....")
+for word in testWords:
+    print("For word: {0}".format(word))
+    word = word.lower().replace(" ", "")
+    print("Formatted word: {0}".format(word))
+    key = key_str(word, testKey)
+    encryptedWord = encrypt(cipher_list, key ,word)
+    print("Encrypted word: {0}".format(encryptedWord))
+    decryptedWord = decrypt(cipher_list, key ,encryptedWord)
+    print("Decrypted word: {0}".format(decryptedWord))
+    if decryptedWord == word:
+        print("TEST PASSED")
+    else:
+        print("TEST FAILED")
+
+ 
 
 encrypted_word = encrypt(cipher_list, key, word)
 #print(encrypted_word)
 decrypted_word = decrypt(cipher_list, key, encrypted_word)
 print(decrypted_word)
+
+
+word = input("Input word: ")
+if word == "":
+    print("Empty word exiting...")
+    exit()
+word = word.lower().replace(" ", "")
+key = input("input key: ")
+print(key)
+if key == "":
+    print("Empty key exiting...")
+    exit()
+key = key_str(word, key)
+encryptedWord = encrypt(cipher_list, key, word)
+print("Encrypted word: {0}".format(encryptedWord))
+decryptedWord = decrypt(cipher_list, key, encryptedWord)
+print(decryptedWord)
+
 
 
 

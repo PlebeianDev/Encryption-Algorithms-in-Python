@@ -78,12 +78,27 @@ def MD4(word):
     formated_result = "".join(f"{value:02x}" for value in result)
     return formated_result
 
-word = "a"
-formated_result = MD4(word)
 
-hashObject = hashlib.new('md4', word.encode('utf-8'))
-digest = hashObject.hexdigest()
 
-if(formated_result == digest):
-    print(formated_result)
-    print("true")
+testWords = ['a', "this is an str", "The quick brown fox jumps over the lazy dog"]
+
+print("--------For testing we are using pythons module hashlib--------")
+for word in testWords:
+    result = MD4(word)
+    hashObject = hashlib.new('md4', word.encode('utf-8'))
+    digest = hashObject.hexdigest()
+    print("For Test word: {0}".format(word))
+    print("Result is: {0}".format(result))
+    if(result == digest):
+        print("TEST PASSED")
+    else:
+        print("TEST FAILED")
+
+
+word = input("Type a word: ")
+if word == "":
+    print("Empty String exiting...")
+    exit()
+
+print(MD4(word))
+
