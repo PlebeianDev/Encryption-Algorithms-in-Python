@@ -2,9 +2,11 @@
 # Algorithm / Tutorial used:    http://page.math.tu-berlin.de/~kant/teaching/hess/krypto-ws2006/des.htm
 # Bonus reading:                https://www.tutorialspoint.com/cryptography/data_encryption_standard.htm
 # Remember to donate to WCKDAWE <3
+# DES Mode: ECB
 
 import unittest
 from typing import Tuple
+from .__helper import halve, join_halves, split, merge, permutate
 
 PC_1 = (
     57, 49, 41, 33, 25, 17, 9,
@@ -137,7 +139,7 @@ def left_circular_shift(inp, shift_length, inp_length):
 
 
 def subkey_generator(key) -> Tuple:
-    K_plus = __permutate(key, PC_1, 64)
+    K_plus = permutate(key, PC_1, 64)
 
     # Split K_Plus into 2 parts, Cx and Dx
     Cx = [K_plus >> 28, ]         # Left Part
@@ -149,106 +151,87 @@ def subkey_generator(key) -> Tuple:
 
     CxDx = []
     for i in range(0, 17):
-        CxDx.append(__join_halves(Cx[i], Dx[i], 28))
+        CxDx.append(join_halves(Cx[i], Dx[i], 28))
 
     Kx = [None, ]
     for i in range(1, 17):
-        Kx.append(__permutate(CxDx[i], PC_2, 56))
+        Kx.append(permutate(CxDx[i], PC_2, 56))
 
     return tuple(Kx)
-
-
-def __permutate(inp, perm_table, bit_len) -> int:
-    tmp = 0
-    for index in perm_table:
-        tmp <<= 1
-        tmp |= (inp >> (bit_len - index) & 1)
-    return tmp
-
-
-def __halve(inp, bit_len) -> Tuple[int, int]:
-    half_len = int(bit_len/2)
-    return (inp >> half_len), (inp & (2**half_len - 1))
-
-
-def __join_halves(left, right, bit_len) -> int:
-    tmp = left << bit_len
-    return tmp | right
-
-
-def __split(inp, num, bit_len) -> tuple:
-    tmp = []
-    split_len = int(bit_len/num)
-    mask = 2**split_len - 1
-    for i in range(0, num):
-        tmp.append(inp >> (bit_len - split_len*(i+1)) & mask)
-    return tuple(tmp)
-
-
-def __merge(inp_list: list, inp_bit_size) -> int:
-    tmp = 0
-    for inp in inp_list:
-        tmp <<= inp_bit_size
-        tmp |= inp
-
-    return tmp
 
 
 def __s_box(inp, table) -> int:
     r0 = inp >> 5 & 1  # inp >> (bit_len - split_len * (i + 1)) & mask)
     r1 = inp >> 0 & 1
-    r = __join_halves(r0, r1, 1)
+    r = join_halves(r0, r1, 1)
     c = inp >> 1 & 0xF
 
     return table[r][c]
 
 
 def __f(r, k):
-    er = __permutate(r, E, 32)
+    er = permutate(r, E, 32)
     ker = k ^ er
-    Bn = __split(ker, 8, 48)
+    Bn = split(ker, 8, 48)
     Sn = [
         __s_box(Bn[0], S1), __s_box(Bn[1], S2), __s_box(Bn[2], S3), __s_box(Bn[3], S4),
         __s_box(Bn[4], S5), __s_box(Bn[5], S6), __s_box(Bn[6], S7), __s_box(Bn[7], S8),
     ]
-    Sn_merged = __merge(Sn, 4)
-    p = __permutate(Sn_merged, P, 32)
-    return p
+    Sn_merged = merge(Sn, 4)
+
+    return permutate(Sn_merged, P, 32)
 
 
-def encrypt(message: int, key: int) -> int:
-    subkeys = subkey_generator(key)
-    ip = __permutate(message, IP, 64)
-    l0, r0 = __halve(ip, 64)
+def __run_des(inp: int, subkeys: list) -> int:
+    ip = permutate(inp, IP, 64)
+    l0, r0 = halve(ip, 64)
 
     Ln = [l0, ]
     Rn = [r0, ]
     for i in range(1, 17):
-        Ln.append(Rn[i-1])
-        Rn.append(Ln[i-1] ^ __f(Rn[i-1], subkeys[i]))
+        Ln.append(Rn[i - 1])
+        Rn.append(Ln[i - 1] ^ __f(Rn[i - 1], subkeys[i]))
 
-    R16L16 = __join_halves(Rn[16], Ln[16], 32)
-    ip_rev = __permutate(R16L16, IP_REVERSE, 64)
-    return ip_rev
+    R16L16 = join_halves(Rn[16], Ln[16], 32)
+
+    return permutate(R16L16, IP_REVERSE, 64)
+
+
+def encrypt_des(message: int, key: int) -> int:
+    subkeys = list(subkey_generator(key))
+    return __run_des(message, subkeys)
+
+
+def decrypt_des(encrypted_message: int, key: int) -> int:
+    subkeys = list(subkey_generator(key))
+    subkeys.pop(0)
+    subkeys.reverse()
+    subkeys.insert(0, None)
+    return __run_des(encrypted_message, subkeys)
 
 
 class TestDES(unittest.TestCase):
     def test_tutorial_encryption_match(self):
         M = 0x0123456789ABCDEF  # Message
         K = 0x133457799BBCDFF1  # Key
-        enc = encrypt(M, K)
-        print(f'{enc:0x}')
+        enc = encrypt_des(M, K)
         self.assertEqual(enc, 0x85E813540F0AB405)
+
+    def test_tutorial_decryption_match(self):
+        M = 0x85E813540F0AB405  # Message
+        K = 0x133457799BBCDFF1  # Key
+        dec = decrypt_des(M, K)
+        self.assertEqual(dec, 0x0123456789ABCDEF)
 
     def test_random_encryption_match(self):
         # Demo using http://des.online-domain-tools.com/, Mode: ECB, Input & Key as HEX
         # Demo inputs & keys using: https://www.browserling.com/tools/random-hex
         MK_pairs = [
-            [   0xD022BDF296E3D53B, 0x3858488EC480CF03  ],
-            [   0xBE1507CEE975ACEF, 0x3A3EBD08F94C9AE6  ],
-            [   0xF4222C97F8A54C6B, 0xCD3A821F13401A61  ],
-            [   0xE76F93C3654E517C, 0xF6714D146A768660  ],
-            [   0x789FC029DDD1D482, 0x43463E8FEEF69F6B  ],
+            [0xD022BDF296E3D53B, 0x3858488EC480CF03],
+            [0xBE1507CEE975ACEF, 0x3A3EBD08F94C9AE6],
+            [0xF4222C97F8A54C6B, 0xCD3A821F13401A61],
+            [0xE76F93C3654E517C, 0xF6714D146A768660],
+            [0x789FC029DDD1D482, 0x43463E8FEEF69F6B],
         ]
         RESULTS = [
             0x3654573265339FA1,
@@ -259,8 +242,30 @@ class TestDES(unittest.TestCase):
         ]
 
         for pair_index, pair in enumerate(MK_pairs):
-            enc = encrypt(pair[0], pair[1])
+            enc = encrypt_des(pair[0], pair[1])
             self.assertEqual(enc, RESULTS[pair_index])
+
+    def test_random_decryption_match(self):
+        # Demo using http://des.online-domain-tools.com/, Mode: ECB, Input & Key as HEX
+        # Demo inputs & keys using: https://www.browserling.com/tools/random-hex
+        MK_pairs = [
+            [0x3654573265339FA1, 0x3858488EC480CF03],
+            [0x7D2F1008E5676027, 0x3A3EBD08F94C9AE6],
+            [0x8FB3D41F5BFFC7EE, 0xCD3A821F13401A61],
+            [0x5A83AC0054550014, 0xF6714D146A768660],
+            [0xE4308E8F8F5B604F, 0x43463E8FEEF69F6B],
+        ]
+        RESULTS = [
+            0xD022BDF296E3D53B,
+            0xBE1507CEE975ACEF,
+            0xF4222C97F8A54C6B,
+            0xE76F93C3654E517C,
+            0x789FC029DDD1D482,
+        ]
+
+        for pair_index, pair in enumerate(MK_pairs):
+            dec = decrypt_des(pair[0], pair[1])
+            self.assertEqual(dec, RESULTS[pair_index])
 
 
 if __name__ == '__main__':
