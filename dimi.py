@@ -1,26 +1,18 @@
-import multiprocessing as mp
-from timeit2 import ti2
-from dimicrypt import encrypt_des, decrypt_des, encrypt_triple_des, decrypt_triple_des
+from dimicrypt import encrypt_triple_des_ecb, decrypt_triple_des_ecb
 
 if __name__ == '__main__':
-    M = 0x64BF0E9477B8DA60
-    K = 0x3A3EBD08F94C9AE63858488EC480CF03
-    enc = encrypt_des(M, K)
-    dec = decrypt_des(enc, K)
-
-    print(f'M\t\t: {M:016X}')
-    print(f'K\t\t: {K:032X}')
-    print(f'ENC\t\t: {enc:016X}')
-    print(f'DEC\t\t: {dec:016X}')
-
-    print("Number of processors: ", mp.cpu_count())
-    ti2(
-        encrypt_des,
-        encrypt_triple_des,
-        args=[M, K],
+    enc = encrypt_triple_des_ecb(
+        message='When the darkness prevails; '
+        'when the moon stops shining; '
+        'when you start to question your logic; '
+        'when you start to question your profession; '
+        'Remember; '
+        'It was just a missing semicolon on line 42.',
+        key='answer'
     )
-    ti2(
-        decrypt_des,
-        decrypt_triple_des,
-        args=[enc, K],
+    print(f'enc\t\t: {enc:0X}')
+    dec = decrypt_triple_des_ecb(
+        encrypted_message=enc,
+        key='answer'
     )
+    print(f'dec\t\t: {dec}')

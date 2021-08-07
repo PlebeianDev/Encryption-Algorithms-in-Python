@@ -3,13 +3,14 @@
 # Bonus reading:                https://www.tutorialspoint.com/cryptography/data_encryption_standard.htm
 # Remember to donate to WCKDAWE <3
 # DES Mode: ECB
-
+import math
 import unittest
 from .DES import encrypt_des, decrypt_des
-from .__helper import halve
+from .__helper import halve, merge
 
 
 def encrypt_triple_des(message: int, key: int) -> int:
+    assert key < 2 ** 128, 'DES Key must be less than 128bits long'
     key_a, key_b = halve(key, 128)
 
     enc = encrypt_des(message, key_a)
@@ -18,11 +19,60 @@ def encrypt_triple_des(message: int, key: int) -> int:
 
 
 def decrypt_triple_des(encrypted_message: int, key: int) -> int:
+    assert key < 2 ** 128, 'DES Key must be less than 128bits long'
     key_a, key_b = halve(key, 128)
 
     dec = decrypt_des(encrypted_message, key_a)
     dec = encrypt_des(dec, key_b)
     return decrypt_des(dec, key_a)
+
+
+def encrypt_triple_des_ecb(message: str, key: str) -> int:
+    blocks_required = math.ceil(len(message) / 8)  # Calculate blocks required for ECB
+    message = message.rjust(blocks_required * 8, chr(0))  # Right justify blocks (Padding)
+    b = bytearray(message, encoding='ascii')  # Convert to bytearray
+    k = bytearray(key, encoding='ascii')  # Convert to bytearray
+    k = int(k.hex(), 16)  # String to int DES Key
+    key_a, key_b = halve(k, 128)
+
+    blocks = [b[index: index + 8] for index in range(0, len(b), 8)]
+    enc_blocks = [
+        encrypt_des(
+            decrypt_des(
+                encrypt_des(int(block.hex(), 16), key_a),
+                key_b
+            ),
+            key_a
+        )
+        for block in blocks
+    ]
+
+    return merge(enc_blocks, 64)
+
+
+def decrypt_triple_des_ecb(encrypted_message: int, key: str) -> int:
+    encrypted_message = hex(encrypted_message)
+    encrypted_message = encrypted_message[2::]
+    enc_list = [encrypted_message[index: index + 16] for index in range(0, len(encrypted_message), 16)]
+
+    k = bytearray(key, encoding='ascii')  # Convert to bytearray
+    k = int(k.hex(), 16)  # String to int DES Key
+    key_a, key_b = halve(k, 128)
+
+    dec_hex = [
+        decrypt_des(
+            encrypt_des(
+                decrypt_des(int(enc, 16), key_a),
+                key_b
+            ),
+            key_a
+        )
+
+        for enc in enc_list
+    ]
+
+    dec_str = [bytearray.fromhex(hex(dec)[2::]).decode('ascii') for dec in dec_hex]
+    return ''.join(dec_str)
 
 
 class TestTripleDES(unittest.TestCase):
@@ -73,6 +123,34 @@ class TestTripleDES(unittest.TestCase):
         for pair_index, pair in enumerate(MK_pairs):
             dec = decrypt_triple_des(pair[0], pair[1])
             self.assertEqual(dec, RESULTS[pair_index])
+
+    def test_random_ecb_encryption_match(self):
+        enc = encrypt_triple_des_ecb(
+            message='When the darkness prevails; '
+                    'when the moon stops shining; '
+                    'when you start to question your logic; '
+                    'when you start to question your profession; '
+                    'Remember; '
+                    'It was just a missing semicolon on line 42.',
+            key='answer'
+        )
+        self.assertEqual(enc,
+                         0xE4AE7F5D387E5D019A9330FAFEC22CE1712F4A5F541F8E66E7177C2292C9B1AB7BD829611EEE3C807A421639C5430DFC6D5FB21A0EE5F36C401C700D11C4F5B7E4D1B3E858EC1B42CCD86750CE2E48618248911C4FBDA2BA8D0F062C4C73E146D871D9287C09F64DC19A1F394B465DC8C9768E0B2076528896E64F9849814FA0309DA403F18BD654154CA744DC72A6D6146A4524B991C458E51605F1D60F14C9AA3B08DFB7CF8F4FC5D8F4EE839E0C6D4AF3AFF59761352B1B79896C631C5AB6138AC091395E21E3)
+
+    def test_random_ecb_decryption_match(self):
+        M = 0xE4AE7F5D387E5D019A9330FAFEC22CE1712F4A5F541F8E66E7177C2292C9B1AB7BD829611EEE3C807A421639C5430DFC6D5FB21A0EE5F36C401C700D11C4F5B7E4D1B3E858EC1B42CCD86750CE2E48618248911C4FBDA2BA8D0F062C4C73E146D871D9287C09F64DC19A1F394B465DC8C9768E0B2076528896E64F9849814FA0309DA403F18BD654154CA744DC72A6D6146A4524B991C458E51605F1D60F14C9AA3B08DFB7CF8F4FC5D8F4EE839E0C6D4AF3AFF59761352B1B79896C631C5AB6138AC091395E21E3
+        K = 'answer'  # Key
+
+        verify_message = 'When the darkness prevails; ' \
+                         'when the moon stops shining; ' \
+                         'when you start to question your logic; ' \
+                         'when you start to question your profession; ' \
+                         'Remember; ' \
+                         'It was just a missing semicolon on line 42.' \
+
+        dec = decrypt_triple_des_ecb(M, K)
+        print(verify_message)
+        self.assertEqual(verify_message, dec)
 
 
 if __name__ == '__main__':
