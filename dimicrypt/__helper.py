@@ -38,4 +38,3 @@ def merge(inp_list: list, inp_bit_size) -> int:
 def left_circular_shift(inp, shift_length, inp_length):
     """https://stackoverflow.com/questions/63759207/circular-shift-of-a-bit-in-python-equivalent-of-fortrans-ishftc"""
     return ((inp << shift_length) % (1 << inp_length)) | (inp >> (inp_length - shift_length))
-
