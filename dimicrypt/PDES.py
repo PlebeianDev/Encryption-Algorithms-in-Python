@@ -1,5 +1,4 @@
 # Vasilis Dimitriadis - 2021
-# DES Parallelization paper:    https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.511.4739&rep=rep1&type=pdf
 # Remember to donate to WCKDAWE <3
 # DES Mode: ECB
 
@@ -57,31 +56,31 @@ class PDes:
 
         return tuple(Kx)
 
-    def encrypt_pdes(self, message: int) -> int:
+    def encrypt(self, message: int) -> int:
         return _run_des(message, self.subkeys)
 
-    def decrypt_pdes(self, encrypted_message: int) -> int:
+    def decrypt(self, encrypted_message: int) -> int:
         return _run_des(encrypted_message, list(reversed(self.subkeys)))
 
-    def encrypt_pdes_ecb(self, message: str) -> int:
+    def encrypt_ecb(self, message: str) -> int:
         blocks_required = math.ceil(len(message) / 8)  # Calculate blocks required for ECB
         message = message.rjust(blocks_required * 8, chr(0))  # Right justify blocks (Padding)
         b = bytearray(message, encoding='ascii')  # Convert to bytearray
 
         pool = mp.Pool(mp.cpu_count())
         blocks = [b[index: index + 8] for index in range(0, len(b), 8)]
-        enc_blocks = pool.starmap(self.encrypt_pdes, [(int(block.hex(), 16), ) for block in blocks])
+        enc_blocks = pool.starmap(self.encrypt, [(int(block.hex(), 16),) for block in blocks])
         pool.close()
 
         return merge(enc_blocks, 64)
 
-    def decrypt_pdes_ecb(self, encrypted_message: int) -> str:
+    def decrypt_ecb(self, encrypted_message: int) -> str:
         encrypted_message = hex(encrypted_message)
         encrypted_message = encrypted_message[2::]
         enc_list = [encrypted_message[index: index + 16] for index in range(0, len(encrypted_message), 16)]
 
         pool = mp.Pool(mp.cpu_count())
-        dec_hex = pool.starmap(self.decrypt_pdes, [(int(enc, 16),) for enc in enc_list])
+        dec_hex = pool.starmap(self.decrypt, [(int(enc, 16),) for enc in enc_list])
         dec_tmp = pool.starmap(bytearray.fromhex, [(hex(dec)[2::],) for dec in dec_hex])
         dec_str = [dec.decode('ascii') for dec in dec_tmp]
         pool.close()
@@ -93,7 +92,7 @@ class TestPDES(unittest.TestCase):
         M = 0x0123456789ABCDEF  # Message
         K = 0x133457799BBCDFF1  # Key
         C = PDes(K)
-        enc_p = C.encrypt_pdes(M)
+        enc_p = C.encrypt(M)
         enc = encrypt_des(M, K)
         self.assertEqual(enc, enc_p)
 
@@ -101,7 +100,7 @@ class TestPDES(unittest.TestCase):
         M = 0x85E813540F0AB405  # Message
         K = 0x133457799BBCDFF1  # Key
         C = PDes(K)
-        dec_p = C.decrypt_pdes(M)
+        dec_p = C.decrypt(M)
         dec = decrypt_des(M, K)
         self.assertEqual(dec, dec_p)
 
@@ -114,7 +113,7 @@ class TestPDES(unittest.TestCase):
             'It was just a missing semicolon on line 42.'
         K = 'answer'
         C = PDes(K)
-        enc_p = C.encrypt_pdes_ecb(M)
+        enc_p = C.encrypt_ecb(M)
         enc = encrypt_des_ecb(M, K)
         self.assertEqual(enc, enc_p)
 
@@ -122,7 +121,7 @@ class TestPDES(unittest.TestCase):
         M = 0xA1E366EE8E7140593CAC987CA58F170307C91516B1218A2D962C909F00198D13B7DCCC5A6B40E900EF1E6819FE6806852BFE559AD29A33FC09D30DF671F9A61A804EC66CDA42C3F3CC3EBA6031C5D27A36D1EB9DB0FB581F5F25A89488A467191B1176DB7B5899357C324056EEC98EC983F9F7B936D620E538AE84009DC74B4394728555B6C324C4F1C82D0FAF8052379897DF6FEB84F99140F57080929BE6EE42E9CE4F831378C5CAFD910DED54F0D2FD8B34EBB78955CB0E1A3096FB3CD4F28B6F0A8F5F1EB61D
         K = 'answer'  # Key
         C = PDes(K)
-        dec_p = C.decrypt_pdes_ecb(M)
+        dec_p = C.decrypt_ecb(M)
         dec = decrypt_des_ecb(M, K)
         self.assertEqual(dec, dec_p)
 

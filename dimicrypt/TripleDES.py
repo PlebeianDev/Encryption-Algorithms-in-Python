@@ -50,7 +50,7 @@ def encrypt_triple_des_ecb(message: str, key: str) -> int:
     return merge(enc_blocks, 64)
 
 
-def decrypt_triple_des_ecb(encrypted_message: int, key: str) -> int:
+def decrypt_triple_des_ecb(encrypted_message: int, key: str) -> str:
     encrypted_message = hex(encrypted_message)
     encrypted_message = encrypted_message[2::]
     enc_list = [encrypted_message[index: index + 16] for index in range(0, len(encrypted_message), 16)]
@@ -149,7 +149,6 @@ class TestTripleDES(unittest.TestCase):
                          'It was just a missing semicolon on line 42.' \
 
         dec = decrypt_triple_des_ecb(M, K)
-        print(verify_message)
         self.assertEqual(verify_message, dec)
 
 
