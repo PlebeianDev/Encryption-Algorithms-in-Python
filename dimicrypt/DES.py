@@ -6,7 +6,7 @@
 import math
 import unittest
 from typing import Tuple
-from .__helper import halve, join_halves, split, merge, permutate
+from .__helper import halve, join_halves, split, merge, permutate, left_circular_shift
 
 PC_1 = (
     57, 49, 41, 33, 25, 17, 9,
@@ -133,11 +133,6 @@ P = (
 )
 
 
-def left_circular_shift(inp, shift_length, inp_length):
-    """https://stackoverflow.com/questions/63759207/circular-shift-of-a-bit-in-python-equivalent-of-fortrans-ishftc"""
-    return ((inp << shift_length) % (1 << inp_length)) | (inp >> (inp_length - shift_length))
-
-
 def subkey_generator(key) -> Tuple:
     K_plus = permutate(key, PC_1, 64)
 
@@ -203,6 +198,15 @@ def encrypt_des(message: int, key: int) -> int:
     return __run_des(message, subkeys)
 
 
+def decrypt_des(encrypted_message: int, key: int) -> int:
+    assert key < 2 ** 64, 'DES Key must be less than 64bits long'
+    subkeys = list(subkey_generator(key))
+    subkeys.pop(0)
+    subkeys.reverse()
+    subkeys.insert(0, None)
+    return __run_des(encrypted_message, subkeys)
+
+
 def encrypt_des_ecb(message: str, key: str) -> int:
     blocks_required = math.ceil(len(message) / 8)  # Calculate blocks required for ECB
     message = message.rjust(blocks_required * 8, chr(0))  # Right justify blocks (Padding)
@@ -227,15 +231,6 @@ def decrypt_des_ecb(encrypted_message: int, key: str) -> str:
     dec_hex = [decrypt_des(int(enc, 16), k) for enc in enc_list]
     dec_str = [bytearray.fromhex(hex(dec)[2::]).decode('ascii') for dec in dec_hex]
     return ''.join(dec_str)
-
-
-def decrypt_des(encrypted_message: int, key: int) -> int:
-    assert key < 2 ** 64, 'DES Key must be less than 64bits long'
-    subkeys = list(subkey_generator(key))
-    subkeys.pop(0)
-    subkeys.reverse()
-    subkeys.insert(0, None)
-    return __run_des(encrypted_message, subkeys)
 
 
 class TestDES(unittest.TestCase):
@@ -320,7 +315,6 @@ class TestDES(unittest.TestCase):
                          'It was just a missing semicolon on line 42.' \
 
         dec = decrypt_des_ecb(M, K)
-        print(verify_message)
         self.assertEqual(verify_message, dec)
 
 

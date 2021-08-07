@@ -1,18 +1,17 @@
 from dimicrypt import encrypt_triple_des_ecb, decrypt_triple_des_ecb
+from dimicrypt.PDES import subkey_generator as pdes_subkey_generator
+from dimicrypt.DES import subkey_generator as des_subkey_generator
+from timeit2 import ti2
+
 
 if __name__ == '__main__':
-    enc = encrypt_triple_des_ecb(
-        message='When the darkness prevails; '
-        'when the moon stops shining; '
-        'when you start to question your logic; '
-        'when you start to question your profession; '
-        'Remember; '
-        'It was just a missing semicolon on line 42.',
-        key='answer'
-    )
-    print(f'enc\t\t: {enc:0X}')
-    dec = decrypt_triple_des_ecb(
-        encrypted_message=enc,
-        key='answer'
-    )
-    print(f'dec\t\t: {dec}')
+    # ti2(
+    #     des_subkey_generator,
+    #     pdes_subkey_generator,
+    #     args=[123],
+    #     relative=True,
+    # )
+    r = pdes_subkey_generator(123)
+    print(r)
+    # pdes_subkey_generator(123)
+    # des_subkey_generator(123)
