@@ -3,9 +3,6 @@ import random
 
 
 # Constants
-from typing import KeysView, Mapping
-
-
 uint16_mask = (1<<16)-1
 
 
